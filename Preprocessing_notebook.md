@@ -291,3 +291,5 @@ ggsave("_Figures/cumplot.png",cumplot,height = 5,width = 7,dpi = 600)
 ``` r
 knitr::include_graphics("figures/cumplot.png")
 ```
+
+<img src="figures/cumplot.png" width="4200" />

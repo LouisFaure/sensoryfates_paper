@@ -1,15 +1,15 @@
 ---
-title: "Full Pipeline"
-output: 
-  html_document:
-    toc: yes
-  html_notebook:
-    theme: united
-    toc: yes
+title: "Preprocessing"
+output:
+  md_document:
+    variant: markdown_github
 ---
 
-This notebook describe the full processing pipeline for filtering the datasets and obtaining a pagoda2 
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
 
+This notebook describe the full processing pipeline for filtering the datasets and obtaining a pagoda2 
 
 ## Importing all count matrices from all plates
 
@@ -101,7 +101,6 @@ cowplot::plot_grid(q1,q2,q3,nrow = 1)
 ## Create filtered expression object
 
 ```{r}
-
 reads.filtered = reads[-(grep("ERCC",rownames(cnts))),reads$use]
 
 # this is going to be used for velocity calculation
@@ -296,6 +295,6 @@ ggsave("_Figures/cumplot.png",cumplot,height = 5,width = 7,dpi = 600)
 
 ```
 
-```{r}
+```{r, eval = TRUE}
 knitr::include_graphics("figures/cumplot.png")
 ```
