@@ -1,8 +1,8 @@
 Preprocessing
 ================
 
--   [Importing all count matrices from all plates](#importing-all-count-matrices-from-all-plates)
--   [Initialize SCE object](#initialize-sce-object)
+-   [Importing functions and data](#importing-functions-and-data)
+    -   [Initialize SCE object](#initialize-sce-object)
 -   [QC](#qc)
     -   [Calculate QC netrics and filter cells](#calculate-qc-netrics-and-filter-cells)
     -   [Create filtered expression object](#create-filtered-expression-object)
@@ -14,10 +14,23 @@ Preprocessing
 
 This notebook describe the full processing pipeline for filtering the datasets and obtaining a pagoda2
 
-Importing all count matrices from all plates
---------------------------------------------
+Importing functions and data
+============================
 
 ``` r
+library(SingleCellExperiment)
+library(scater)
+library(grid)
+library(egg)
+library(reticulate)
+library(pagoda2)
+library(Seurat)
+library(ggplot2)
+library(parallel)
+
+source("helpers/preprocessing.R")
+
+
 cnts=as.matrix(read.csv("_Output/raw_counts.csv",row.names = 1,check.names=FALSE))
 ```
 
@@ -25,9 +38,6 @@ Initialize SCE object
 ---------------------
 
 ``` r
-#setwd(paste0("~/NAS/",Project))
-library(SingleCellExperiment)
-
 timeloc=c("Cranial12.5","Cranial12.5",
   "DRG10.5","DRG10.5","DRG10.5","DRG10.5",
   "DRG11.5",
@@ -67,9 +77,6 @@ Calculate QC netrics and filter cells
 -------------------------------------
 
 ``` r
-library(scater)
-library(grid)
-library(egg)
 reads <- calculateQCMetrics(reads, feature_controls = list(ERCC = grep("ERCC",rownames(cnts))))
 
 reads = reads[,reads$total_features_by_counts!=0]
@@ -191,9 +198,8 @@ geneSets <- c(goSets, deSets)
 ### Regressing out respiratory chain
 
 ``` r
-library(Seurat)
 s=CreateSeuratObject(counts(reads.filtered[,rownames(p2_sensory$counts)]))
-s=NormalizeData(s,)
+s=NormalizeData(s)
 s@meta.data$mito=p2_sensory$misc$pathwayOD$xv[5,]
 s=ScaleData(s,vars.to.regress = "mito",do.par = T,num.cores = 4)
 s=FindVariableGenes(s);s=RunPCA(s,pcs.compute = 100)
@@ -267,7 +273,6 @@ Main UMAP plots
 ---------------
 
 ``` r
-# Hete
 tm=timplot(p2_sensory$embeddings$PCA$UMAP,p2w=p2w,reverse = T)+scale_color_viridis_d(labels=c("E9.5","E10.5","E11.5","E12.5"))+theme(legend.position = c(.5,.85))
 
 loc=locplot(p2w$originalP2object$embeddings$PCA$UMAP,p2w,reads.filtered,pos = c(.5,.85))

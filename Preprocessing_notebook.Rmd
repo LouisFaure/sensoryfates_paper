@@ -13,7 +13,7 @@ knitr::opts_chunk$set(eval = FALSE)
 
 This notebook describe the full processing pipeline for filtering the datasets and obtaining a pagoda2 
 
-# Importing fucntions and data
+# Importing functions and data
 
 ```{r}
 library(SingleCellExperiment)
@@ -27,11 +27,8 @@ library(ggplot2)
 library(parallel)
 
 source("helpers/preprocessing.R")
-```
 
-## Importing all count matrices from all plates
 
-```{r import all counts matrices}
 cnts=as.matrix(read.csv("_Output/raw_counts.csv",row.names = 1,check.names=FALSE))
 ```
 
