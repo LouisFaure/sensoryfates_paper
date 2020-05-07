@@ -1,8 +1,10 @@
 ---
 title: "Preprocessing"
 output:
-  md_document:
-    variant: markdown_github
+  github_document:
+    toc: true
+    toc_depth: 2
+    html_preview: true
 ---
 
 ```{r setup, include = FALSE}
@@ -59,7 +61,7 @@ reads <- SingleCellExperiment(
 
 ## Calculate QC netrics and filter cells
 
-```{r, fig.height = 4, fig.width = 12}
+```{r}
 library(scater)
 library(grid)
 library(egg)
@@ -95,7 +97,11 @@ reads$use <- (
     filter_by_ERCC
 )
 
-cowplot::plot_grid(q1,q2,q3,nrow = 1)
+ggsave("figures/QC.png",cowplot::plot_grid(q1,q2,q3,nrow = 1),width = 12,height = 4)
+```
+
+```{r, eval = TRUE, echo=FALSE}
+knitr::include_graphics("figures/QC.png")
 ```
 
 ## Create filtered expression object
@@ -141,17 +147,25 @@ gn2=ggplot(emb2)+geom_point(aes(x=UMAP1,y=UMAP2,col=gene))+
       scale_color_gradient(name="Tubb3",low = "grey",high="red")+theme_void()+
       theme(aspect.ratio = 1,legend.direction = "horizontal",legend.position = c(.3,.1))
 
+ggsave("figures/overview_Sox10_Tubb3.png",cowplot::plot_grid(gn1,gn2),width = 14,height = 7)
+```
 
-cowplot::plot_grid(gn1,gn2)
+```{r, eval = TRUE, echo=FALSE}
+knitr::include_graphics("figures/overview_Sox10_Tubb3.png")
 ```
 
 
-```{r,fig.width=4,fig.height=4}
+```{r}
 sel=p2$clusters$PCA$leiden%in%c(6,8,9,10,3,5)
 names(sel)=rownames(p2$counts)
 select=rownames(p2$counts)[p2$clusters$PCA$leiden%in%c(2,3,7,10,12)]
-
+png("figures/cell_selection.png",width = 4,height = 4,units = "in",res=150)
 p2$plotEmbedding("PCA","UMAP",groups=sel,show.legend = T)
+title("cell selection")
+dev.off()
+```
+```{r, eval = TRUE, echo=FALSE}
+knitr::include_graphics("figures/cell_selection.png")
 ```
 
 # Sensory lineages analysis
@@ -256,9 +270,12 @@ tm=timplot(p2_sensory$embeddings$PCA$UMAP,p2w=p2w,reverse = T)+scale_color_virid
 
 loc=locplot(p2w$originalP2object$embeddings$PCA$UMAP,p2w,reads.filtered,pos = c(.5,.85))
 
-clu=cluplot(p2_sensory$embeddings$PCA$UMAP,p2_sensory,p2w,pos = c(.5,.85))+theme(legend.direction = "horizontal")
+clu=cluplot(p2_sensory$embeddings$PCA$UMAP,p2_sensory,p2w,pos = c(.4,.85))+theme(legend.direction = "horizontal")
 
-cowplot::plot_grid(tm,loc,clu,nrow = 1)
+ggsave("figures/main_umap_plots.png",cowplot::plot_grid(tm,loc,clu,nrow = 1),width = 12,height = 4)
+```
+```{r, eval = TRUE, echo=FALSE}
+knitr::include_graphics("figures/main_umap_plots.png")
 ```
 
 ## Heterogeneity
@@ -295,6 +312,6 @@ ggsave("_Figures/cumplot.png",cumplot,height = 5,width = 7,dpi = 600)
 
 ```
 
-```{r, eval = TRUE}
+```{r, eval = TRUE, echo=FALSE}
 knitr::include_graphics("figures/cumplot.png")
 ```

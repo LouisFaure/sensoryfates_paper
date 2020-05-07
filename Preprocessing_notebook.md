@@ -1,3 +1,17 @@
+Preprocessing
+================
+
+-   [Importing all count matrices from all plates](#importing-all-count-matrices-from-all-plates)
+-   [Initialize SCE object](#initialize-sce-object)
+-   [QC](#qc)
+    -   [Calculate QC netrics and filter cells](#calculate-qc-netrics-and-filter-cells)
+    -   [Create filtered expression object](#create-filtered-expression-object)
+-   [Overview of the dataset](#overview-of-the-dataset)
+-   [Sensory lineages analysis](#sensory-lineages-analysis)
+    -   [Clustering, and pathway overdispersion analysis](#clustering-and-pathway-overdispersion-analysis)
+    -   [Main UMAP plots](#main-umap-plots)
+    -   [Heterogeneity](#heterogeneity)
+
 This notebook describe the full processing pipeline for filtering the datasets and obtaining a pagoda2
 
 Importing all count matrices from all plates
@@ -88,8 +102,10 @@ reads$use <- (
     filter_by_ERCC
 )
 
-cowplot::plot_grid(q1,q2,q3,nrow = 1)
+ggsave("figures/QC.png",cowplot::plot_grid(q1,q2,q3,nrow = 1),width = 12,height = 4)
 ```
+
+<img src="figures/QC.png" width="3600" />
 
 Create filtered expression object
 ---------------------------------
@@ -135,17 +151,22 @@ gn2=ggplot(emb2)+geom_point(aes(x=UMAP1,y=UMAP2,col=gene))+
       scale_color_gradient(name="Tubb3",low = "grey",high="red")+theme_void()+
       theme(aspect.ratio = 1,legend.direction = "horizontal",legend.position = c(.3,.1))
 
-
-cowplot::plot_grid(gn1,gn2)
+ggsave("figures/overview_Sox10_Tubb3.png",cowplot::plot_grid(gn1,gn2),width = 14,height = 7)
 ```
+
+<img src="figures/overview_Sox10_Tubb3.png" width="4200" />
 
 ``` r
 sel=p2$clusters$PCA$leiden%in%c(6,8,9,10,3,5)
 names(sel)=rownames(p2$counts)
 select=rownames(p2$counts)[p2$clusters$PCA$leiden%in%c(2,3,7,10,12)]
-
+png("figures/cell_selection.png",width = 4,height = 4,units = "in",res=150)
 p2$plotEmbedding("PCA","UMAP",groups=sel,show.legend = T)
+title("cell selection")
+dev.off()
 ```
+
+<img src="figures/cell_selection.png" width="600" />
 
 Sensory lineages analysis
 =========================
@@ -251,10 +272,12 @@ tm=timplot(p2_sensory$embeddings$PCA$UMAP,p2w=p2w,reverse = T)+scale_color_virid
 
 loc=locplot(p2w$originalP2object$embeddings$PCA$UMAP,p2w,reads.filtered,pos = c(.5,.85))
 
-clu=cluplot(p2_sensory$embeddings$PCA$UMAP,p2_sensory,p2w,pos = c(.5,.85))+theme(legend.direction = "horizontal")
+clu=cluplot(p2_sensory$embeddings$PCA$UMAP,p2_sensory,p2w,pos = c(.4,.85))+theme(legend.direction = "horizontal")
 
-cowplot::plot_grid(tm,loc,clu,nrow = 1)
+ggsave("figures/main_umap_plots.png",cowplot::plot_grid(tm,loc,clu,nrow = 1),width = 12,height = 4)
 ```
+
+<img src="figures/main_umap_plots.png" width="3600" />
 
 Heterogeneity
 -------------
@@ -286,10 +309,6 @@ cumplot=ggplot(cumres,aes(cum,val,fill=leiden,col=leiden))+ stat_summary(geom = 
   theme(legend.direction = "horizontal",legend.position = c(.5,.9),plot.margin = margin(10, 10, 10, 10, "pt"))
 
 ggsave("_Figures/cumplot.png",cumplot,height = 5,width = 7,dpi = 600)
-```
-
-``` r
-knitr::include_graphics("figures/cumplot.png")
 ```
 
 <img src="figures/cumplot.png" width="4200" />
