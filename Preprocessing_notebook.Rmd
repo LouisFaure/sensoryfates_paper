@@ -265,9 +265,17 @@ p2w <- make.p2.app(
 )
 #show.app(p2w,"p2")
 
-saveRDS(p2w,"submission/p2w_sensory.rds")
-p2w$serializeToStaticFast("submission/p2w_sensory.bin")
+saveRDS(p2w,"output/p2w_sensory.rds")
+p2w$serializeToStaticFast("output/p2w_sensory.bin")
 ```
+
+Download processed data for reproducibility
+
+```{r}
+p2w=
+p2_sensory=p2w$originalP2object
+```
+
 
 ## Main UMAP plots
 
@@ -350,7 +358,6 @@ knitr::include_graphics("figures/adhesion.png")
 
 ```{r migration}
 transition=t(p2_sensory$misc$pwpca$`GO:0030335`$xp$scores)-t(p2_sensory$misc$pwpca$`GO:0030336`$xp$scores)
-
 
 pl_mig=ggplot(data.frame(emb))+geom_point(aes(x=UMAP1,y=UMAP2),size=1.5,color="black")+
   geom_point(aes(x=UMAP1,y=UMAP2,col=transition),size=1)+theme_void()+theme(aspect.ratio = 1,legend.position=c(0.5,.1),legend.direction = "horizontal")+ guides(colour = guide_colorbar(reverse=T))+scale_color_distiller(palette = "RdYlBu",name="",breaks=c(min(transition),max(transition)),labels=c("Negative","Positive"))+ggtitle("Regulation of cell migration")
