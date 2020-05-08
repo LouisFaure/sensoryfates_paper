@@ -11,6 +11,7 @@ Preprocessing
     -   [Clustering, and pathway overdispersion analysis](#clustering-and-pathway-overdispersion-analysis)
     -   [Main UMAP plots](#main-umap-plots)
     -   [Heterogeneity](#heterogeneity)
+    -   [GO term plots](#go-term-plots)
 
 This notebook describe the full processing pipeline for filtering the datasets and obtaining a pagoda2
 
@@ -231,10 +232,10 @@ additionalMetadata$leiden <- p2.metadata.from.factor(p2_sensory$clusters$PCA$lei
 library(ggthemes)
 additionalMetadata <- list()
 
-additionalMetadata$leiden <- p2.metadata.from.factor(p2_el$clusters$PCA$leiden, displayname = 'Leiden', s = 0.7, v = 0.8,start = 0, end = 0.5,pal = tableau_color_pal(palette = "Tableau 20")(nlevels(p2_el$clusters$PCA$leiden)))
+additionalMetadata$leiden <- p2.metadata.from.factor(p2_sensory$clusters$PCA$leiden, displayname = 'Leiden', s = 0.7, v = 0.8,start = 0, end = 0.5,pal = tableau_color_pal(palette = "Tableau 20")(nlevels(p2_sensory$clusters$PCA$leiden)))
 
-expcells = reads.filtered[,names(p2_el$clusters$PCA[[1]])]$exp
-names(expcells) = names(p2_el$clusters$PCA[[1]])
+expcells = reads.filtered[,names(p2_sensory$clusters$PCA[[1]])]$exp
+names(expcells) = names(p2_sensory$clusters$PCA[[1]])
 additionalMetadata$exp <- p2.metadata.from.factor(expcells, 
                                                   displayname = 'Batch', 
                                                   s = 0.7, 
@@ -243,8 +244,8 @@ additionalMetadata$exp <- p2.metadata.from.factor(expcells,
                                                   end = 0.5,
                                                   pal = palette_pander(nlevels(expcells)))
 
-tpcells = reads.filtered[,names(p2_el$clusters$PCA[[1]])]$timepoints
-names(tpcells) = names(p2_el$clusters$PCA[[1]])
+tpcells = reads.filtered[,names(p2_sensory$clusters$PCA[[1]])]$timepoints
+names(tpcells) = names(p2_sensory$clusters$PCA[[1]])
 additionalMetadata$tp <- p2.metadata.from.factor(tpcells, 
                                                  displayname = 'Location', 
                                                  s = 0.7, 
@@ -252,8 +253,8 @@ additionalMetadata$tp <- p2.metadata.from.factor(tpcells,
                                                  start = 0, 
                                                  end = 0.5)
 
-time = reads.filtered[,names(p2_el$clusters$PCA[[1]])]$time
-names(time) = names(p2_el$clusters$PCA[[1]])
+time = reads.filtered[,names(p2_sensory$clusters$PCA[[1]])]$time
+names(time) = names(p2_sensory$clusters$PCA[[1]])
 
 
 p2w <- make.p2.app(
@@ -317,3 +318,40 @@ ggsave("_Figures/cumplot.png",cumplot,height = 5,width = 7,dpi = 600)
 ```
 
 <img src="figures/cumplot.png" width="4200" />
+
+GO term plots
+-------------
+
+### Cell adhesion
+
+``` r
+pl_int=ggplot(data.frame(umap))+geom_point(aes(x=UMAP1,y=UMAP2),size=1.5,color="black")+
+  geom_point(aes(x=UMAP1,y=UMAP2,col=t(p2_sensory$misc$pwpca$`GO:0005178`$xp$scores)),size=1)+
+  theme_void()+theme(aspect.ratio = 1,legend.position="none")+scale_color_gradient2(low = "darkgreen", mid="white", high="darkorange")+
+  ggtitle("integrin binding GO:0005178")
+
+pl_cad=ggplot(data.frame(umap))+geom_point(aes(x=UMAP1,y=UMAP2),size=1.5,color="black")+
+  geom_point(aes(x=UMAP1,y=UMAP2,col=t(p2_sensory$misc$pwpca$`GO:0045296`$xp$scores)),size=1)+
+  theme_void()+theme(aspect.ratio = 1,legend.position="none")+scale_color_gradient2(low = "darkgreen", mid="white", high="darkorange")+
+  ggtitle("cadherin binding GO:0045296")
+
+pl_adh=arrangeGrob(pl_int,pl_cad,nrow=1)
+
+ggsave("figures/adhesion.png",pl_adh,width = 10,height = 5,dpi = 600)
+```
+
+<img src="figures/adhesion.png" width="6000" />
+
+### Migration
+
+``` r
+transition=t(p2_sensory$misc$pwpca$`GO:0030335`$xp$scores)-t(p2_sensory$misc$pwpca$`GO:0030336`$xp$scores)
+
+
+pl_mig=ggplot(data.frame(emb))+geom_point(aes(x=UMAP1,y=UMAP2),size=1.5,color="black")+
+  geom_point(aes(x=UMAP1,y=UMAP2,col=transition),size=1)+theme_void()+theme(aspect.ratio = 1,legend.position=c(0.5,.1),legend.direction = "horizontal")+ guides(colour = guide_colorbar(reverse=T))+scale_color_distiller(palette = "RdYlBu",name="",breaks=c(min(transition),max(transition)),labels=c("Negative","Positive"))+ggtitle("Regulation of cell migration")
+
+ggsave("figures/migration.png",pl_mig,width = 5,height = 5,dpi = 300)
+```
+
+<img src="figures/migration.png" width="70%" style="display: block; margin: auto;" />

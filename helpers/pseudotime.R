@@ -117,3 +117,116 @@ graph.to.ppt <- function(NodePositions,Edges=NULL,X,emb=NULL,plot=T){
   if (plot){plotppt(z,emb,tips=F,forks=F,cex.tree = 0.2,lwd.tree = 2)}
   return(z)
 }
+
+ppt.to.dyno <- function(z,emb,X=NULL,simplify=T) {
+  require(dyno)
+  if (is.null(X)){X=emb}
+  g = graph.adjacency(z$B, mode = "undirected")
+  ml = igraph::as_data_frame(g,"edges")
+  ml$from=as.numeric(ml$from)
+  ml$to=as.numeric(ml$to)
+  
+  PartStruct <- PartitionData(
+    X,
+    NodePositions =t(z$F)
+  )
+  
+  ProjStruct <- project_point_onto_graph(
+    X,
+    NodePositions = t(z$F),
+    Edges = as.matrix(ml),
+    Partition = PartStruct$Partition
+  )
+  
+  milestone_network <- ProjStruct$Edges %>%
+    dplyr::as_data_frame()%>%
+    mutate(
+      from = paste0("M", from),
+      to = paste0("M", to),
+      length = ProjStruct$EdgeLen,
+      directed = FALSE
+    )
+  
+  progressions <- tibble(cell_id = rownames(X), edge_id = ProjStruct$EdgeID) %>%
+    left_join(milestone_network %>% dplyr::select(from, to) %>% mutate(edge_id = row_number()), "edge_id") %>%
+    dplyr::select(-edge_id) %>%
+    mutate(percentage = pmin(1, pmax(0, ProjStruct$ProjectionValues)))
+  
+  traj=wrap_data(
+    cell_id = rownames(X),
+  ) %>% 
+    add_trajectory(
+      milestone_network = milestone_network,
+      progressions = progressions # either milestone_percentages or progressions have to be provided
+    ) %>% add_dimred(emb)
+  
+  if (!is.null(z$root)){traj=add_root(traj,root_milestone_id = paste0("M",z$root))}
+  
+  if (simplify){return(simplify_trajectory(traj))}else{return(traj)}
+}
+
+scde.process.dataset <- function(dat,name,env=go.env,batch=NULL,k=min(20,ncol(cd)/n.groups),max.model.plots=50,cd=NULL,varinfo=NULL,knn=NULL,max.adj.var=5,skip.pca=FALSE,min.size.entries=1e3,control.for.depth.variation=TRUE,max.quantile=1,seed=0) {
+  cat("processing ",name,": ");
+  if(is.null(cd)) {
+    cd <- dat;
+    
+    CairoPNG(file=paste(name,"reads.per.cell.png",sep="."),width=350,height=350)
+    par(mfrow=c(1,1), mar = c(3.5,3.5,2.0,0.5), mgp = c(2,0.65,0), cex = 0.9);
+    hist(colSums(dat)/1e6,col="wheat",xlab="reads per cell (M)",main="Read counts across cells")
+    abline(v=1e5/1e6,lty=2,col=2)
+    dev.off()
+    table(colSums(dat)>=min.cell.reads)
+    
+    CairoPNG(file=paste(name,"reads.per.gene.png",sep="."),width=350,height=350)
+    par(mfrow=c(1,1), mar = c(3.5,3.5,2.0,0.5), mgp = c(2,0.65,0), cex = 0.9);
+    hist(log10(rowSums(dat)+1),col="wheat",xlab="reads per gene (log10)",main="Read counts across genes")
+    abline(v=log10(min.gene.reads+1),lty=2,col=2)
+    dev.off()
+    
+    CairoPNG(file=paste(name,"genes.per.cell.png",sep="."),width=350,height=350)
+    par(mfrow=c(1,1), mar = c(3.5,3.5,2.0,0.5), mgp = c(2,0.65,0), cex = 0.9);
+    hist(log10(colSums(dat>0)+1),col="wheat",xlab="genes per cell (log10)",main="Gene counts across cells")
+    abline(v=log10(min.cell.genes+1),lty=2,col=2)
+    dev.off()
+    
+    # filter out low-gene cells
+    vi <- colSums(cd)>min.cell.reads; table(vi)
+    cd <- cd[,vi];
+    
+    # remove genes that don't have many reads
+    vi <- rowSums(cd)>min.gene.reads; table(vi)
+    cd <- cd[vi,];
+    
+    # remove genes that are not seen in a sufficient number of cells
+    vi <- rowSums(cd>0)>min.gene.cells; table(vi)
+    cd <- cd[vi,];
+  }  
+  cat("proceeding with ",nrow(cd)," genes across ",ncol(cd)," cells ");
+  
+  set.seed(seed);
+  
+  if(is.null(knn) || is.null(varinfo)) {
+    knn <- knn.error.models(cd,groups=as.factor(rep(name,ncol(cd))),k=k,n.cores=n.cores,min.count.threshold=1,min.nonfailed=min.nonfailed,verbose=0,max.model.plots=max.model.plots,min.size.entries=min.size.entries)
+    cat("models ")
+    prior <- scde.expression.prior(models=knn,counts=cd,length.out=400,show.plot=F,max.quantile=max.quantile)
+    pdf(file=paste(name,"varnorm.pdf",sep="."),height=4,width=8)
+    varinfo <- pagoda.varnorm(knn,counts=cd,trim=trim/ncol(cd),plot=T,verbose=1,prior=prior,max.adj.var=max.adj.var,weight.df.power=1,batch=batch)
+    dev.off();
+    cat("varinfo ")
+    if(control.for.depth.variation) {
+      varinfo <- pagoda.subtract.aspect(varinfo,colSums(cd[,rownames(knn)]>0))
+    }
+  }
+  
+  if(!skip.pca) {
+    pwpca <- pagoda.pathway.wPCA(varinfo,env,n.components=1,n.cores=n.cores,n.internal.shuffles=0,verbose=1,n.randomizations=5)
+    cat("pathways ")
+    pdf(file=paste(name,"clvar.pdf",sep="."),height=4,width=8)
+    clpca <- pagoda.gene.clusters(varinfo,trim=(trim+5)/ncol(varinfo$mat),n.clusters=150,n.cores=n.cores,verbose=1,plot=T)
+    dev.off();
+    cat("clusters\n")
+  } else {
+    pwpca <- clpca <- NULL;
+  }
+  return(list(cd=cd,knn=knn,prior=prior,varinfo=varinfo,pwpca=pwpca,clpca=clpca,batch=batch))
+}
