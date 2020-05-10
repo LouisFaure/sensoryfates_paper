@@ -230,3 +230,20 @@ scde.process.dataset <- function(dat,name,env=go.env,batch=NULL,k=min(20,ncol(cd
   }
   return(list(cd=cd,knn=knn,prior=prior,varinfo=varinfo,pwpca=pwpca,clpca=clpca,batch=batch))
 }
+
+
+plot.tree <- function(ppt,dyn,emb,subtree=NULL,proj_sd=.8){
+  emb2=emb[!rownames(emb)%in%rownames(ppt$cell.summary),]
+  pl=plot_dimred(dyn,trajectory_projection_sd = proj_sd,size_trajectory = 2)+geom_point(data=data.frame(emb2),aes(x=emb2[,1],y=emb2[,2]),color="grey")+theme(aspect.ratio = 1)
+  pl=gginnards::move_layers(pl,idx=7,position = "bottom")
+  pl=gginnards::move_layers(pl,idx=8,position = "bottom")
+  pl$layers[[5]]$aes_params$size=2
+  pl$layers[[6]]$geom_params$lineend="round"
+  pl$data$color=ppt$cell.summary[pl$data$cell_id,]$color
+  if (!is.null(subtree)){
+    pl$data[!pl$data$cell_id%in%rownames(ppt$cell.summary)[ppt$cell.summary$seg %in% subtree$segs],]$color=
+      "grey"
+  }
+  
+  return(pl)
+}
