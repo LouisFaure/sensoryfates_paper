@@ -165,6 +165,9 @@ ppt.to.dyno <- function(z,emb,X=NULL,simplify=T) {
   if (simplify){return(simplify_trajectory(traj))}else{return(traj)}
 }
 
+
+library(Cairo)
+library(scde)
 scde.process.dataset <- function(dat,name,env=go.env,batch=NULL,k=min(20,ncol(cd)/n.groups),max.model.plots=50,cd=NULL,varinfo=NULL,knn=NULL,max.adj.var=5,skip.pca=FALSE,min.size.entries=1e3,control.for.depth.variation=TRUE,max.quantile=1,seed=0) {
   cat("processing ",name,": ");
   if(is.null(cd)) {

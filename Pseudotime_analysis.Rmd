@@ -394,7 +394,7 @@ for (tf in sometf){
   par(mar=c(1,1,1,1))
   plotppt(ppt,umap,pattern.cell = ppt$fit.summary[tf,],gene=tf,cex.main=0.5,cex.tree = 1,lwd.tree = 0.1,par=FALSE)
   par(mar=c(1,1,1,1))
-  plotppt(ppt,umap,pattern.cell = act[tf,],gene=tf,cex.main=0.5,cex.tree = 1,lwd.tree = 0.1,par=FALSE,pallete = colorRampPalette(c("darkgreen","gray50","orange")) )
+  plotppt(ppt,umap,pattern.cell = act[tf,],gene=tf,cex.main=0.5,cex.tree = 1,lwd.tree = 0.1,par=FALSE,palette = colorRampPalette(c("darkgreen","gray50","orange")) )
 }
 dev.off()
 ```
